@@ -1,4 +1,4 @@
-module github.com/graze/throttled
+module github.com/graze/go-throttled
 
 require (
 	github.com/stretchr/testify v1.3.0
