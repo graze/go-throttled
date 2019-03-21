@@ -1,12 +1,15 @@
 package throttled
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"net/http"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 
@@ -69,7 +72,6 @@ func TestTransport_RoundTrip(t *testing.T) {
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
 				go func() {
-					fmt.Println("calling round trip")
 					defer wg.Done()
 					transport.RoundTrip(&http.Request{})
 				}()
@@ -80,4 +82,62 @@ func TestTransport_RoundTrip(t *testing.T) {
 			assert.InDelta(t, math.Abs(tt.wantRate/mrt.rate), 1, 0.1)
 		})
 	}
+}
+
+func TestTransport_ContextCancel(t *testing.T) {
+	mrt := &mockRoundTripper{count: -1}
+	transport := &Transport{
+		base:    mrt,
+		limiter: rate.NewLimiter(rate.Limit(1), 0), // never execute limiter
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	r, err := http.NewRequest("GET", "/path", nil)
+	r = r.WithContext(ctx)
+	require.Nil(t, err)
+
+	hit := false
+	c := make(chan bool)
+	go func() {
+		_, err := transport.RoundTrip(r)
+		hit = true
+		require.NotNil(t, err)
+		assert.Equal(t, "context canceled", err.Error())
+		c <- true
+	}()
+
+	// cancel the context
+	cancel()
+
+	<-c
+
+	assert.True(t, hit, "the context was cancelled")
+}
+
+func TestTransport_ContextTimeout(t *testing.T) {
+	mrt := &mockRoundTripper{count: -1}
+	transport := &Transport{
+		base:    mrt,
+		limiter: rate.NewLimiter(rate.Limit(1), 0), // never execute limiter
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*10)
+	r, err := http.NewRequest("GET", "/path", nil)
+	r = r.WithContext(ctx)
+	require.Nil(t, err)
+
+	hit := false
+	c := make(chan bool)
+	go func() {
+		_, err := transport.RoundTrip(r)
+		hit = true
+		require.NotNil(t, err)
+		assert.Equal(t, "context deadline exceeded", err.Error())
+		c <- true
+	}()
+
+	<-c
+
+	// cancel the context after the timeout
+	cancel()
+
+	assert.True(t, hit, "the context was cancelled")
 }
