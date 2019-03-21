@@ -7,7 +7,10 @@ ifeq (${GOEXEC},)
 GOEXEC = ${GO_DOCKER}
 endif
 
-default: build test
+default: get build test
+
+get:
+	${GOEXEC} get ${gobuild_args} ./...
 
 build:
 	${GOEXEC} build ./...
