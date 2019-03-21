@@ -25,7 +25,11 @@ func NewTransport(base http.RoundTripper, limiter *rate.Limiter) *Transport {
 
 // WrapClient wraps an existing clients transport with the rate limiting transport
 func WrapClient(client *http.Client, limiter *rate.Limiter) *http.Client {
-	client.Transport = NewTransport(client.Transport, limiter)
+	ts := client.Transport
+	if ts == nil {
+		ts = http.DefaultTransport
+	}
+	client.Transport = NewTransport(ts, limiter)
 	return client
 }
 
