@@ -13,6 +13,11 @@ type Transport struct {
 	limiter *rate.Limiter
 }
 
+// Client returns a default http client with rate limiting
+func Client(limiter *rate.Limiter) *http.Client {
+	return &http.Client{Transport: NewTransport(http.DefaultTransport, limiter)}
+}
+
 // NewTransport thottled http transport
 func NewTransport(base http.RoundTripper, limiter *rate.Limiter) *Transport {
 	return &Transport{base, limiter}
