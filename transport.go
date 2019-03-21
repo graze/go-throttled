@@ -22,7 +22,8 @@ type Transport struct {
 //
 // Example:
 //
-//     throttled.Client(rate.NewLimiter(rate.Limit(4), 40))
+//     client := throttled.Client(rate.NewLimiter(rate.Limit(4), 40))
+//     resp, err := client.Get("/path")
 func Client(limiter *rate.Limiter) *http.Client {
 	return &http.Client{Transport: NewTransport(http.DefaultTransport, limiter)}
 }
@@ -33,7 +34,9 @@ func Client(limiter *rate.Limiter) *http.Client {
 //
 // Example:
 //
-//     throttled.NewTransport(http.DefaultTransport, rate.NewLimiter(rate.Limit(4), 40))
+//     transport := throttled.NewTransport(http.DefaultTransport, rate.NewLimiter(rate.Limit(4), 40))
+//     client := &http.Client{Transport: transport}
+//     resp, err := client.Get("/path")
 func NewTransport(base http.RoundTripper, limiter *rate.Limiter) *Transport {
 	return &Transport{base, limiter}
 }
@@ -44,7 +47,8 @@ func NewTransport(base http.RoundTripper, limiter *rate.Limiter) *Transport {
 //
 // Example:
 //
-//     client.Client = throttled.WrapClient(client.Client, rate.NewLimiter(rate.Limit(4), 40))
+//     throttled.WrapClient(client.Client, rate.NewLimiter(rate.Limit(4), 40))
+//     client.Method()
 func WrapClient(client *http.Client, limiter *rate.Limiter) *http.Client {
 	if client == nil {
 		client = &http.Client{Transport: http.DefaultTransport}
