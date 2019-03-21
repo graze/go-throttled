@@ -9,10 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/stretchr/testify/assert"
-
+	"github.com/stretchr/testify/require"
 	"golang.org/x/time/rate"
 )
 
@@ -140,4 +138,38 @@ func TestTransport_ContextTimeout(t *testing.T) {
 	cancel()
 
 	assert.True(t, hit, "the context was cancelled")
+}
+
+func TestWrapClient(t *testing.T) {
+	tests := []struct {
+		name    string
+		client  *http.Client
+		limiter *rate.Limiter
+		want    *http.Client
+	}{
+		{
+			name:    "has transport",
+			client:  &http.Client{Transport: http.DefaultTransport},
+			limiter: rate.NewLimiter(rate.Limit(10), 1),
+			want:    &http.Client{Transport: &Transport{base: http.DefaultTransport, limiter: rate.NewLimiter(rate.Limit(10), 1)}},
+		},
+		{
+			name:    "no transport",
+			client:  &http.Client{},
+			limiter: rate.NewLimiter(rate.Limit(10), 1),
+			want:    &http.Client{Transport: &Transport{base: http.DefaultTransport, limiter: rate.NewLimiter(rate.Limit(10), 1)}},
+		},
+		{
+			name:    "nil client",
+			client:  nil,
+			limiter: rate.NewLimiter(rate.Limit(10), 1),
+			want:    &http.Client{Transport: &Transport{base: http.DefaultTransport, limiter: rate.NewLimiter(rate.Limit(10), 1)}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := WrapClient(tt.client, tt.limiter)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
