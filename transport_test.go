@@ -159,6 +159,12 @@ func TestWrapClient(t *testing.T) {
 			limiter: rate.NewLimiter(rate.Limit(10), 1),
 			want:    &http.Client{Transport: &Transport{base: http.DefaultTransport, limiter: rate.NewLimiter(rate.Limit(10), 1)}},
 		},
+		{
+			name:    "nil client",
+			client:  nil,
+			limiter: rate.NewLimiter(rate.Limit(10), 1),
+			want:    &http.Client{Transport: &Transport{base: http.DefaultTransport, limiter: rate.NewLimiter(rate.Limit(10), 1)}},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
