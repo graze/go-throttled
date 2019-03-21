@@ -1,0 +1,13 @@
+version: '2'
+services:
+  go:
+    build:
+      dockerfile: .docker/dev.Dockerfile
+      context: .
+    volumes:
+      - .:/app
+      - ~/go/src:/go/src
+      - ~/go/pkg:/go/pkg
+    working_dir: /app
+    entrypoint:
+      - go
